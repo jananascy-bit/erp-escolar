@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ERP Escolar — Gestão Completa</title>
+
+  <!-- Fonts & libs -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --primary:#0f172a;
+      --accent:#1e40af;
+      --accent-2:#06b6d4;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --warning:#f59e0b;
+      --muted:#6b7280;
+      --border:#e6eef6;
+      --glass:rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef2ff 0%,var(--bg) 60%);color:var(--primary);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+    /* Top bar */
+    header{position:fixed;left:0;right:0;top:0;height:64px;background:linear-gradient(90deg,var(--accent),#1e3a8a);color:white;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;box-shadow:0 6px 24px rgba(14,30,37,0.12);z-index:80}
+    header .brand{display:flex;align-items:center;gap:12px}
+    header .brand .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#60a5fa,#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px}
+    header h1{font-size:16px;margin:0;font-weight:700}
+    header .meta{font-size:13px;opacity:0.95}
+    header .controls{display:flex;gap:10px;align-items:center}
+
+    /* Mobile menu button */
+    .menu-toggle{display:none;background:transparent;border:1px solid rgba(255,255,255,0.12);padding:8px;border-radius:8px;color:white;font-weight:700;cursor:pointer}
+
+    /* Layout */
+    .app{display:flex;padding-top:84px;gap:20px;transition:all .18s}
+    nav.sidebar{width:260px;min-width:200px;background:var(--card);border-right:1px solid var(--border);padding:18px;border-radius:0 12px 12px 0;height:calc(100vh - 84px);position:sticky;top:84px;overflow:auto}
+    nav .menu{display:flex;flex-direction:column;gap:6px}
+    nav button{display:flex;align-items:center;gap:12px;border:none;background:transparent;padding:12px 10px;border-radius:8px;text-align:left;font-weight:600;color:var(--muted);cursor:pointer;transition:all .18s}
+    nav button.active{background:linear-gradient(90deg,rgba(37,99,235,0.08),rgba(6,182,212,0.04));color:var(--accent);box-shadow:inset 0 0 0 1px rgba(37,99,235,0.04)}
+    nav button:hover{background:#f8fbff;color:var(--accent)}
+    nav .section-title{font-size:12px;color:var(--muted);margin:12px 6px}
+
+    main.content{flex:1;padding:20px 28px 60px 28px;min-height:calc(100vh - 84px);transition:all .18s}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+    .col-4{grid-column:span 4}
+    .col-8{grid-column:span 8}
+    .col-6{grid-column:span 6}
+    .col-12{grid-column:span 12}
+
+    .card{background:var(--card);border-radius:12px;padding:18px;border:1px solid var(--border);box-shadow:0 8px 30px rgba(2,6,23,0.04)}
+    .card h3{margin:0 0 8px 0;color:var(--accent);font-size:16px}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* Inputs */
+    label{display:block;font-size:13px;color:var(--muted);margin:8px 0 6px;font-weight:600}
+    input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px;background:linear-gradient(180deg,#ffffff,#fbfdff)}
+    input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 6px 18px rgba(6,182,212,0.12);border-color:var(--accent)}
+    textarea{min-height:120px}
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse}
+    thead th{background:#f8fafc;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid var(--border);position:sticky;top:0}
+    tbody tr:nth-child(even){background:#fbfdff}
+    td,th{padding:12px;border-bottom:1px solid var(--border)}
+
+    /* Badges */
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px}
+    .bg-success{background:rgba(16,185,129,0.12);color:var(--success)}
+    .bg-danger{background:rgba(239,68,68,0.1);color:var(--danger)}
+    .bg-warning{background:rgba(245,158,11,0.12);color:var(--warning)}
+    .bg-info{background:rgba(6,182,212,0.12);color:var(--accent-2)}
+
+    /* Controls */
+    .controls{display:flex;gap:10px;align-items:center}
+    .btn{padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:white;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(14,30,37,0.06)}
+    .small{padding:6px 10px;font-size:13px;border-radius:8px}
+
+    /* PDF helper styles to render for html2canvas (not visible) */
+    .pdf-hidden{display:none}
+
+    /* Responsive */
+    @media(max-width:1100px){
+      nav.sidebar{position:fixed;left:0;top:84px;bottom:0;transform:translateX(-120%);transition:transform .22s;z-index:100}
+      nav.sidebar.open{transform:translateX(0)}
+      .menu-toggle{display:inline-flex}
+      .app{padding-left:12px}
+      main.content{padding:18px}
+    }
+
+    /* Tiny helpers */
+    .muted-2{color:#94a3b8;font-size:13px}
+    .row{display:flex;gap:10px;align-items:center}
+    .col{flex:1}
+    .mini{font-size:12px;padding:6px 8px}
+    .center{text-align:center}
+    .boleto{border:1px dashed rgba(0,0,0,0.08);padding:10px;border-radius:10px;margin-bottom:8px;background:#fff}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">ES</div>
+      <div>
+        <h1>ERP Escolar</h1>
+        <div class="meta muted">Sistema de Gestão — Cadastro · Acompanhamento · Financeiro</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="meta muted">Usuário: Diretor • Hoje: <span id="today"></span></div>
+    </div>
+  </header>
+
+  <div class="app">
+    <nav class="sidebar" id="sidebar">
+      <div class="menu">
+        <button class="active" data-section="dashboard">🏠 Dashboard</button>
+        <button data-section="alunos">👥 Alunos</button>
+        <button data-section="agenda">📅 Agenda</button>
+        <button data-section="financeiro">💰 Financeiro</button>
+        <button data-section="acompanhamento">📝 Acompanhamento</button>
+        <button data-section="desempenho">📊 Desempenho</button>
+      </div>
+      <div style="flex:1"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:12px">v1.1 • Offline • PDF: jsPDF</div>
+    </nav>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="view">
+        <div class="grid">
+          <div class="card col-8">
+            <h3>Visão Financeira — Mês</h3>
+            <div style="display:flex;gap:18px;align-items:center">
+              <div style="width:320px;background:#fbfdff;padding:12px;border-radius:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6)">
+                <canvas id="chartFinance" height="200"></canvas>
+              </div>
+              <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="card" style="background:linear-gradient(180deg,#ffffff,#f7fffb);min-height:80px">
+                  <div class="muted">Mês</div>
+                  <div style="font-size:18px;font-weight:800;margin-top:6px" id="kpi_mes">—</div>
+                </div>
+                <div class="card" style="background:linear-gradient(180deg,#ffffff,#fff7f7);min-height:80px">
+                  <div class="muted">Em atraso</div>
+                  <div style="font-size:18px;font-weight:800;margin-top:6px;color:var(--danger)" id="kpi_atraso">R$ 0,00</div>
+                </div>
+                <div class="card" style="background:linear-gradient(180deg,#ffffff,#f7fffb);min-height:80px">
+                  <div class="muted">Total esperado</div>
+                  <div style="font-size:18px;font-weight:800;margin-top:6px" id="kpi_total">R$ 0,00</div>
+                </div>
+                <div class="card" style="background:linear-gradient(180deg,#ffffff,#f7fff3);min-height:80px">
+                  <div class="muted">Recebido</div>
+                  <div style="font-size:18px;font-weight:800;margin-top:6px;color:var(--success)" id="kpi_recebido">R$ 0,00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card col-4">
+            <h3>Atalhos rápidos</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+              <button class="btn" id="shortcut_alunos">➕ Novo aluno</button>
+              <button class="btn ghost" id="shortcut_fin">📄 Gerar mensalidades</button>
+              <button class="btn ghost" id="shortcut_acomp">📝 Acompanhar aluno</button>
+            </div>
+          </div>
+
+          <div class="card col-12" style="margin-top:6px">
+            <h3>Resumo rápido</h3>
+            <div style="display:flex;gap:18px;align-items:center">
+              <div style="flex:1">
+                <div class="muted">Total alunos</div>
+                <div style="font-size:18px;font-weight:800;margin-top:6px" id="kpi_alunos">0</div>
+              </div>
+              <div style="flex:1">
+                <div class="muted">Aulas agendadas</div>
+                <div style="font-size:18px;font-weight:800;margin-top:6px" id="kpi_agenda">0</div>
+              </div>
+              <div style="flex:1">
+                <div class="muted">Mensalidades geradas</div>
+                <div style="font-size:18px;font-weight:800;margin-top:6px" id="kpi_mens">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ALUNOS -->
+      <section id="alunos" class="view hidden">
+        <div class="grid">
+          <div class="card col-4">
+            <h3>Novo Aluno</h3>
+            <label>Nome <span class="muted" style="font-weight:600">*</span></label><input id="nome_inp" placeholder="Nome completo" />
+            <label>Idade</label><input id="idade_inp" type="number" min="0" />
+            <label>Escola</label><input id="escola_inp" />
+            <label>Turma</label><input id="turma_inp" />
+            <label>Horário preferencial</label><input id="horario_inp" placeholder="Ex: Seg 19:00" />
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn" id="btn_salvar_aluno">Salvar</button>
+              <button class="btn ghost" id="btn_limpar_aluno">Limpar</button>
+            </div>
+
+            <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn ghost small" id="btn_imprimir_alunos">📄 Exportar PDF (lista)</button>
+              <button class="btn ghost small" id="btn_export">📥 Exportar CSV</button>
+            </div>
+          </div>
+
+          <div class="card col-8">
+            <h3>Lista de Alunos</h3>
+            <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+              <input id="search_alunos" placeholder="Pesquisar por nome, turma, escola..." style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border)" />
+              <button class="btn ghost" id="btn_clear_search">✖</button>
+            </div>
+            <div style="overflow:auto;max-height:520px">
+              <table>
+                <thead><tr><th>Nome</th><th>Escola</th><th>Turma</th><th>Horário</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tbody_alunos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AGENDA -->
+      <section id="agenda" class="view hidden">
+        <div class="grid">
+          <div class="card col-6">
+            <h3>Agendar Aula</h3>
+            <label>Aluno</label><select id="sel_aluno_ag"></select>
+            <label>Dia</label><select id="sel_dia"><option>Segunda</option><option>Terça</option><option>Quarta</option><option>Quinta</option><option>Sexta</option><option>Sábado</option></select>
+            <label>Hora (HH:MM)</label><input id="sel_hora" placeholder="Ex: 18:30" />
+            <label>Tipo</label><select id="sel_tipo"><option value="aula">Aula</option><option value="reforco">Reforço</option></select>
+            <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="btn_agendar">Alocar</button><button class="btn ghost" id="btn_limpar_ag">Limpar</button></div>
+
+            <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn ghost small" id="btn_imprimir_agenda">📄 Exportar PDF (agenda)</button>
+              <button class="btn ghost small" id="btn_export_ag_viz">🔍 Verificar conflitos</button>
+            </div>
+          </div>
+          <div class="card col-6">
+            <h3>Agenda da Semana</h3>
+            <div id="agenda_list" style="max-height:420px;overflow:auto"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINANCEIRO -->
+      <section id="financeiro" class="view hidden">
+        <div class="grid">
+          <div class="card col-4">
+            <h3>Gerar Mensalidades</h3>
+            <label>Mês/Ano <span class="muted" style="font-weight:600">*</span></label><input id="mes_ano" placeholder="MM/YYYY" />
+            <label>Valor (R$) <span class="muted" style="font-weight:600">*</span></label><input id="valor_padrao" type="number" step="0.01" />
+            <label>Vencimento (dia do mês)</label><input id="venc_dia" type="number" min="1" max="31" placeholder="Ex: 10" />
+            <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="btn_gerar_mens">Gerar</button><button class="btn ghost" id="btn_resumo_mes">Resumo</button></div>
+
+            <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="filtro_mens" style="flex:1"><option value="all">Todas</option><option value="pagas">Pagas</option><option value="devendo">Devendo</option></select>
+              <button class="btn ghost small" id="btn_imprimir_fin">📄 Exportar PDF (boletos)</button>
+            </div>
+          </div>
+          <div class="card col-8">
+            <h3>Mensalidades</h3>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+              <div class="muted">Filtrar por mês (MM/YYYY)</div>
+              <input id="filtro_mes_input" placeholder="Ex: 08/2025" style="padding:8px;border-radius:8px;border:1px solid var(--border)" />
+            </div>
+            <div style="max-height:520px;overflow:auto">
+              <table>
+                <thead><tr><th>Aluno</th><th>Mês</th><th>Valor</th><th>Venc.</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tbody_mens"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACOMPANHAMENTO -->
+      <section id="acompanhamento" class="view hidden">
+        <div class="grid">
+          <div class="card col-4">
+            <h3>Ficha do Aluno</h3>
+            <label>Aluno</label><select id="sel_aluno_acomp"></select>
+            <label>Notas (ex: 8.5)</label><input id="nota_inp" />
+            <label>Dificuldades</label><input id="dif_inp" />
+            <label>Plano de ação</label><textarea id="plano_inp"></textarea>
+            <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="btn_salvar_acomp">Salvar Acompanhamento</button><button class="btn ghost" id="btn_imprimir_acomp">📄 Exportar PDF (ficha)</button></div>
+          </div>
+          <div class="card col-8">
+            <h3>Resumo de Acompanhamento</h3>
+            <div id="resumo_acomp" style="max-height:520px;overflow:auto"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DESEMPENHO -->
+      <section id="desempenho" class="view hidden">
+        <div class="grid">
+          <div class="card col-6">
+            <h3>Notas médias (por aluno)</h3>
+            <canvas id="chart_barras" height="220"></canvas>
+            <div style="margin-top:10px"><button class="btn ghost small" id="btn_pdf_barras">📄 Exportar PDF (gráfico)</button></div>
+          </div>
+          <div class="card col-6">
+            <h3>Evolução (aluno)</h3>
+            <label>Aluno</label><select id="sel_aluno_desem"></select>
+            <canvas id="chart_linha" height="220" style="margin-top:12px"></canvas>
+            <div style="margin-top:10px"><button class="btn ghost small" id="btn_pdf_linha">📄 Exportar PDF (evolução)</button></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // ---------- Utils & persistence ----------
+    const STORAGE='erp_escolar_v1'
+    let state = {alunos:[],mensalidades:[],agenda:[],acomp:[]}
+    function save(){localStorage.setItem(STORAGE,JSON.stringify(state))}
+    function load(){const s=localStorage.getItem(STORAGE); if(s) try{ state=JSON.parse(s) }catch(e){ state={alunos:[],mensalidades:[],agenda:[],acomp:[]} }}
+    load()
+
+    // ---------- Helpers ----------
+    const $=(id)=>document.getElementById(id)
+    function uid(prefix='id'){return prefix+'_'+Math.random().toString(36).slice(2,9)}
+    function fmtMoney(v){return 'R$ '+Number(v||0).toFixed(2)}
+    function todayStr(){return new Date().toLocaleDateString('pt-BR')}
+    $('today').textContent = todayStr()
+
+    // ---------- Mobile menu toggle ----------
+    const menuToggle = $('menuToggle'), sidebar = $('sidebar')
+    menuToggle.addEventListener('click', ()=>{ sidebar.classList.toggle('open') })
+
+    // Close sidebar when clicking outside on small screens
+    document.addEventListener('click', (e)=>{
+      if(window.innerWidth<=1100){
+        if(!sidebar.contains(e.target) && !menuToggle.contains(e.target)) sidebar.classList.remove('open')
+      }
+    })
+
+    // ---------- Navigation ----------
+    document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click', ()=>{ navigateTo(b.dataset.section) }))
+    function navigateTo(section){
+      document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'))
+      document.querySelector(`nav button[data-section="${section}"]`)?.classList.add('active')
+      document.querySelectorAll('main .view').forEach(v=>v.classList.add('hidden'))
+      document.getElementById(section).classList.remove('hidden')
+      // update header title
+      document.querySelector('header h1').textContent = 'ERP Escolar — ' + document.querySelector(`nav button[data-section="${section}"]`).textContent.trim()
+      if(window.innerWidth<=1100) sidebar.classList.remove('open')
+      refreshAll()
+    }
+
+    // ---------- Render & selects ----------
+    function fillAlunoSelects(){
+      const opts = state.alunos.map(a=>`<option value="${a.id}">${a.nome}</option>`).join('')
+      document.querySelectorAll('#sel_aluno_ag,#sel_aluno_acomp,#sel_aluno_desem').forEach(s=>{ if(s) s.innerHTML = '<option value="">— selecione —</option>'+opts })
+    }
+
+    // ---------- Alunos ----------
+    function renderAlunosTable(filterText=''){
+      $('tbody_alunos').innerHTML = ''
+      const q = (filterText||'').toLowerCase().trim()
+      state.alunos.forEach(a=>{
+        if(q){
+          const hay = `${a.nome} ${a.turma||''} ${a.escola||''} ${a.idade||''}`.toLowerCase()
+          if(!hay.includes(q)) return
+        }
+        const tr = document.createElement('tr')
+        const status = (state.mensalidades.find(m=>m.alunoId===a.id && !m.pago)) ? '<span class="badge bg-danger">Devendo</span>' : '<span class="badge bg-success">Em dia</span>'
+        tr.innerHTML = `<td>${a.nome}</td><td>${a.escola||''}</td><td>${a.turma||''}</td><td>${a.horario||''}</td><td>${status}</td><td><button class="btn ghost small" data-id="${a.id}" onclick="editAluno(this)">Editar</button> <button class="btn ghost small" data-id="${a.id}" onclick="delAluno(this)">Excluir</button></td>`
+        $('tbody_alunos').appendChild(tr)
+      })
+      fillAlunoSelects()
+      $('kpi_alunos').textContent = state.alunos.length
+    }
+
+    window.editAluno = function(btn){
+      const id=btn.dataset.id; const a=state.alunos.find(x=>x.id===id)
+      if(!a){ alert('Aluno não encontrado'); return }
+      const novoNome = prompt('Editar nome', a.nome)
+      if(novoNome && novoNome.trim()){
+        a.nome = novoNome.trim()
+        save(); renderAlunosTable($('search_alunos').value); refreshAll()
+      }
+    }
+
+    window.delAluno = function(btn){
+      if(!confirm('Excluir aluno e todos os seus registros (mensalidades, agenda, acompanhamento)?')) return
+      const id=btn.dataset.id
+      state.alunos = state.alunos.filter(a=>a.id!==id)
+      state.mensalidades = state.mensalidades.filter(m=>m.alunoId!==id)
+      state.agenda = state.agenda.filter(g=>g.alunoId!==id)
+      state.acomp = state.acomp.filter(r=>r.alunoId!==id)
+      save(); renderAlunosTable($('search_alunos').value); refreshAll()
+    }
+
+    $('btn_salvar_aluno').addEventListener('click', ()=>{
+      const nome=$('nome_inp').value.trim(); if(!nome){ alert('Nome é obrigatório'); return }
+      const a={id:uid('al'),nome,idade:($('idade_inp').value||'').trim(),escola:$('escola_inp').value.trim(),turma:$('turma_inp').value.trim(),horario:$('horario_inp').value.trim()}
+      state.alunos.push(a); save(); renderAlunosTable($('search_alunos').value); $('nome_inp').value=''; $('idade_inp').value=''; $('escola_inp').value=''; $('turma_inp').value=''; $('horario_inp').value=''
+    })
+
+    $('btn_limpar_aluno').addEventListener('click', ()=>{ ['nome_inp','idade_inp','escola_inp','turma_inp','horario_inp'].forEach(id=>$(id).value='') })
+
+    // Search filter
+    $('search_alunos').addEventListener('input', (e)=>{ renderAlunosTable(e.target.value) })
+    $('btn_clear_search').addEventListener('click', ()=>{ $('search_alunos').value=''; renderAlunosTable('') })
+
+    // ---------- Agenda ----------
+    function renderAgenda(){
+      const container = $('agenda_list'); container.innerHTML=''
+      const days = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+      days.forEach(d=>{
+        const items = state.agenda.filter(x=>x.dia===d).sort((a,b)=>a.hora.localeCompare(b.hora))
+        const card = document.createElement('div'); card.className='card'; card.style.marginBottom='10px'
+        card.innerHTML = `<strong style="display:block;margin-bottom:8px">${d}</strong>`
+        if(items.length===0){ const em=document.createElement('div'); em.className='muted-2'; em.textContent='— Sem aulas —'; card.appendChild(em) }
+        items.forEach(it=>{
+          const aluno = state.alunos.find(a=>a.id===it.alunoId)
+          const div=document.createElement('div'); div.style.display='flex'; div.style.justifyContent='space-between'; div.style.alignItems='center'; div.style.padding='8px 6px'
+          div.innerHTML = `<div><strong>${aluno?aluno.nome:'(removido)'}</strong><div class="muted">${it.hora} • ${it.tipo}</div></div><div><button class="btn ghost small" onclick="removeAg('${it.id}')">Remover</button></div>`
+          card.appendChild(div)
+        })
+        container.appendChild(card)
+      })
+      $('kpi_agenda').textContent = state.agenda.length
+    }
+
+    $('btn_agendar').addEventListener('click', ()=>{
+      const alunoId = $('sel_aluno_ag').value; const dia = $('sel_dia').value; const hora = ($('sel_hora').value||'').trim(); const tipo = $('sel_tipo').value
+      if(!alunoId){ alert('Selecione um aluno'); return }
+      if(!hora.match(/^\d{1,2}:\d{2}$/)){ alert('Hora inválida. Use formato HH:MM'); return }
+      // Prevent conflict: same aluno cannot have same day+hour; also prevent same day+hour slot assigned twice (optional)
+      const conflict = state.agenda.find(a=>a.dia===dia && a.hora===hora && a.alunoId===alunoId)
+      if(conflict){ alert('Conflito: este aluno já tem uma aula nesse dia e horário'); return }
+      // Also check if another student in same slot — we might allow (multiple students if group), so we won't block universally
+      const ag = {id:uid('ag'),alunoId,dia,hora,tipo}
+      state.agenda.push(ag); save(); renderAgenda(); renderAlunosTable($('search_alunos').value)
+      $('sel_hora').value = ''
+    })
+
+    window.removeAg = function(id){ if(!confirm('Remover agendamento?')) return; state.agenda = state.agenda.filter(a=>a.id!==id); save(); renderAgenda(); }
+
+    $('btn_limpar_ag').addEventListener('click', ()=>{ $('sel_aluno_ag').value=''; $('sel_dia').value='Segunda'; $('sel_hora').value=''; $('sel_tipo').value='aula' })
+
+    // ---------- Financeiro ----------
+    function renderMens(){
+      $('tbody_mens').innerHTML=''
+      const filtro = $('filtro_mens').value
+      const filtro_mes = $('filtro_mes_input').value.trim()
+      const today = new Date()
+      state.mensalidades.forEach(m=>{
+        if(filtro === 'pagas' && !m.pago) return
+        if(filtro === 'devendo' && m.pago) return
+        if(filtro_mes && m.mes !== filtro_mes) return
+        const aluno = state.alunos.find(a=>a.id===m.alunoId)
+        const tr=document.createElement('tr')
+        const venc = m.vencimento || '—'
+        const status = m.pago?'<span class="badge bg-success">Pago</span>' : (isOverdue(m,venc) ? '<span class="badge bg-danger">Atrasado</span>' : '<span class="badge bg-danger">Devendo</span>')
+        tr.innerHTML = `<td>${aluno?aluno.nome:'(removido)'}</td><td>${m.mes}</td><td>${fmtMoney(m.valor)}</td><td>${venc}</td><td>${status}</td><td><button class="btn ghost small" onclick="togglePago('${m.id}')">Toggle</button></td>`
+        $('tbody_mens').appendChild(tr)
+      })
+      $('kpi_mens').textContent = state.mensalidades.length
+    }
+
+    function isOverdue(m, venc){
+      if(!venc) return false
+      // venc: number day; m.mes format MM/YYYY
+      const parts = (m.mes||'').split('/')
+      if(parts.length!==2) return false
+      const day = Number(venc)
+      const month = Number(parts[0]) - 1
+      const year = Number(parts[1])
+      const dueDate = new Date(year, month, day, 23, 59, 59)
+      return (!m.pago) && (new Date() > dueDate)
+    }
+
+    $('btn_gerar_mens').addEventListener('click', ()=>{
+      const mes=$('mes_ano').value.trim(); const valor=Number($('valor_padrao').value)
+      const venc_dia = $('venc_dia').value ? Number($('venc_dia').value) : null
+      if(!mes||!valor){ alert('Preencha mês (MM/YYYY) e valor'); return }
+      // validate month format
+      if(!/^\d{2}\/\d{4}$/.test(mes)){ alert('Mês inválido. Use MM/YYYY'); return }
+      state.alunos.forEach(a=>{
+        if(!state.mensalidades.find(m=>m.mes===mes && m.alunoId===a.id)){
+          state.mensalidades.push({id:uid('m'),alunoId:a.id,mes,valor,pago:false,vencimento:venc_dia})
+        }
+      })
+      save(); renderMens(); updateFinanceChart(); alert('Mensalidades geradas (sem duplicatas)') 
+    })
+
+    window.togglePago = function(id){ const m = state.mensalidades.find(x=>x.id===id); if(m){ m.pago=!m.pago; save(); renderMens(); updateFinanceChart(); } }
+
+    $('filtro_mens').addEventListener('change', ()=>{ renderMens() })
+    $('filtro_mes_input').addEventListener('input', ()=>{ renderMens() })
+
+    // ---------- Acompanhamento ----------
+    $('btn_salvar_acomp').addEventListener('click', ()=>{
+      const alunoId = $('sel_aluno_acomp').value; const nota = Number($('nota_inp').value); const dif = $('dif_inp').value.trim(); const plano = $('plano_inp').value.trim()
+      if(!alunoId){ alert('Selecione aluno'); return }
+      let record = state.acomp.find(a=>a.alunoId===alunoId)
+      if(!record){ record = {alunoId,notas:[],dificuldades:'',plano:''}; state.acomp.push(record) }
+      if(!isNaN(nota) && $('nota_inp').value!=='') record.notas.push({mes:$('mes_ano').value||todayStr(),valor:nota})
+      record.dificuldades = dif
+      record.plano = plano
+      save(); renderAcomp(); updatePerformanceCharts(); alert('Acompanhamento salvo')
+    })
+
+    function renderAcomp(){
+      $('resumo_acomp').innerHTML=''; state.acomp.forEach(r=>{
+        const aluno=state.alunos.find(a=>a.id===r.alunoId)
+        const div=document.createElement('div'); div.className='card'; div.style.marginBottom='8px'
+        div.innerHTML = `<strong>${aluno?aluno.nome:'(removido)'}</strong><div class="muted">Dificuldades: ${r.dificuldades||'—'}</div><div class="muted">Plano: ${r.plano||'—'}</div><div style="margin-top:8px">Notas: ${r.notas.map(n=>n.valor).join(', ') || '—'}</div>`
+        $('resumo_acomp').appendChild(div)
+      })
+    }
+
+    // ---------- Charts ----------
+    const ctxFin = document.getElementById('chartFinance').getContext('2d');
+    const chartFin = new Chart(ctxFin,{type:'doughnut',data:{labels:['Pagas','Devendo'],datasets:[{data:[0,0],backgroundColor:['#16a34a','#ef4444']}]},options:{responsive:true,plugins:{legend:{position:'bottom'}}}})
+
+    function updateFinanceChart(){
+      const mes = $('mes_ano').value || (state.mensalidades.length? state.mensalidades[state.mensalidades.length-1].mes : '')
+      $('kpi_mes').textContent = mes || '—'
+      const mens = state.mensalidades.filter(m=>m.mes===mes)
+      const pagas = mens.filter(m=>m.pago).length
+      const dev = mens.filter(m=>!m.pago).length
+      const total = mens.reduce((s,m)=>s+m.valor,0)
+      const rec = mens.filter(m=>m.pago).reduce((s,m)=>s+m.valor,0)
+      $('kpi_total').textContent = fmtMoney(total)
+      $('kpi_recebido').textContent = fmtMoney(rec)
+      $('kpi_atraso').textContent = fmtMoney(total-rec)
+      chartFin.data.datasets[0].data = [pagas,dev]
+      chartFin.update()
+    }
+
+    // Performance charts
+    const ctxBar = document.getElementById('chart_barras').getContext('2d');
+    const chartBar = new Chart(ctxBar,{type:'bar',data:{labels:[],datasets:[{label:'Média',data:[],backgroundColor:[]}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:10}}}})
+
+    const ctxLine = document.getElementById('chart_linha').getContext('2d');
+    const chartLine = new Chart(ctxLine,{type:'line',data:{labels:[],datasets:[{label:'Notas',data:[],borderColor:'#06b6d4',fill:false}]},options:{responsive:true,scales:{y:{beginAtZero:true,max:10}}}})
+
+    function updatePerformanceCharts(){
+      const labels = state.alunos.map(a=>a.nome)
+      const data = state.alunos.map(a=>{
+        const r = state.acomp.find(x=>x.alunoId===a.id)
+        if(!r || !r.notas.length) return 0
+        const avg = r.notas.reduce((s,n)=>s+Number(n.valor),0)/r.notas.length
+        return Number(avg.toFixed(2))
+      })
+      chartBar.data.labels = labels; chartBar.data.datasets[0].data = data; chartBar.data.datasets[0].backgroundColor = data.map(v=> v>=7 ? '#16a34a' : (v>0? '#f59e0b' : '#e2e8f0'))
+      chartBar.update()
+
+      const sel = $('sel_aluno_desem').value
+      const r = state.acomp.find(x=>x.alunoId===sel)
+      if(r){ chartLine.data.labels = r.notas.map(n=>n.mes||'—'); chartLine.data.datasets[0].data = r.notas.map(n=>n.valor); chartLine.update() }
+      else { chartLine.data.labels = []; chartLine.data.datasets[0].data = []; chartLine.update() }
+    }
+
+    $('sel_aluno_desem').addEventListener('change', ()=>{ updatePerformanceCharts() })
+
+    // ---------- Misc ----------
+    function refreshAll(){ renderAlunosTable($('search_alunos').value); renderAgenda(); renderMens(); renderAcomp(); updateFinanceChart(); updatePerformanceCharts(); fillAlunoSelects() }
+
+    // Initial sample data if empty (useful)
+    if(!state.alunos.length){
+      state.alunos = [ {id:uid('al'),nome:'João Silva',turma:'6º A',escola:'Colégio Alfa',horario:'Seg 18:00'}, {id:uid('al'),nome:'Maria Pereira',turma:'5º B',escola:'Escola Beta',horario:'Qua 19:00'} ]
+      state.mensalidades = [ {id:uid('m'),alunoId:state.alunos[0].id,mes:'08/2025',valor:150,pago:true,vencimento:10}, {id:uid('m'),alunoId:state.alunos[1].id,mes:'08/2025',valor:150,pago:false,vencimento:10} ]
+      state.acomp = [ {alunoId:state.alunos[0].id,notas:[{mes:'06/2025',valor:7.5},{mes:'07/2025',valor:8.0}],dificuldades:'Leitura',plano:'Exercicios semanais'}, {alunoId:state.alunos[1].id,notas:[{mes:'06/2025',valor:6.0},{mes:'07/2025',valor:6.5}],dificuldades:'Matemática',plano:'Aulas extras'} ]
+      save()
+    }
+
+    // Initial render
+    refreshAll()
+
+    // Shortcuts
+    $('shortcut_alunos').addEventListener('click', ()=>{ navigateTo('alunos') })
+    $('shortcut_fin').addEventListener('click', ()=>{ navigateTo('financeiro') })
+    $('shortcut_acomp').addEventListener('click', ()=>{ navigateTo('acompanhamento') })
+
+    // Export CSV (Alunos)
+    $('btn_export').addEventListener('click', ()=>{
+      const rows = [['id','nome','escola','turma','horario']]
+      state.alunos.forEach(a=>rows.push([a.id,a.nome,a.escola||'',a.turma||'',a.horario||'']))
+      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n')
+      const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='alunos.csv'; a.click(); URL.revokeObjectURL(url)
+    })
+
+    // Print handlers (browser) - kept but primary exports via jsPDF
+    // $('btn_imprimir_fin').addEventListener('click', ()=>{ window.print() })
+    // $('btn_imprimir_acomp')?.addEventListener('click', ()=>{ window.print() })
+
+    // ---------- PDF Exports (jsPDF + autotable + html2canvas) ----------
+    const { jsPDF } = window.jspdf
+
+    // 1) Alunos PDF (lista filtrada)
+    async function exportAlunosPDF(){
+      const doc = new jsPDF({unit:'pt',format:'a4'})
+      doc.setFontSize(16); doc.text('Lista de Alunos', 40, 40)
+      doc.setFontSize(11)
+      const rows = []
+      const q = ($('search_alunos').value||'').toLowerCase().trim()
+      state.alunos.forEach(a=>{
+        if(q){
+          const hay = `${a.nome} ${a.turma||''} ${a.escola||''} ${a.idade||''}`.toLowerCase()
+          if(!hay.includes(q)) return
+        }
+        rows.push([a.nome || '-', a.escola || '-', a.turma || '-', a.idade || '-', a.horario || '-'])
+      })
+      doc.autoTable({
+        startY: 60,
+        head: [['Nome','Escola','Turma','Idade','Horário']],
+        body: rows,
+        theme: 'grid',
+        headStyles: {fillColor:[30,64,175], textColor:255},
+        styles:{fontSize:10}
+      })
+      doc.save('alunos-lista.pdf')
+    }
+    $('btn_imprimir_alunos').addEventListener('click', exportAlunosPDF)
+
+    // 2) Agenda PDF (formatada por dia)
+    async function exportAgendaPDF(){
+      const doc = new jsPDF({unit:'pt',format:'a4'})
+      doc.setFontSize(16); doc.text('Agenda Semanal', 40, 40)
+      let y = 70
+      const days = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+      doc.setFontSize(11)
+      for(const d of days){
+        const items = state.agenda.filter(x=>x.dia===d).sort((a,b)=>a.hora.localeCompare(b.hora))
+        doc.setFontSize(12); doc.text(d, 40, y); y += 18
+        if(items.length===0){
+          doc.setFontSize(10); doc.text('— Sem aulas —', 48, y); y += 16
+        } else {
+          const body = items.map(it=>{
+            const aluno = state.alunos.find(a=>a.id===it.alunoId)
+            return [it.hora, aluno?aluno.nome:'(removido)', it.tipo]
+          })
+          doc.autoTable({ startY: y, head:[['Hora','Aluno','Tipo']], body, theme:'grid', headStyles:{fillColor:[6,182,212]}, styles:{fontSize:10}, margin:{left:40,right:40} })
+          y = doc.lastAutoTable.finalY + 8
+        }
+        if(y > 720){ doc.addPage(); y = 40 }
+      }
+      doc.save('agenda-semanal.pdf')
+    }
+    $('btn_imprimir_agenda').addEventListener('click', exportAgendaPDF)
+
+    // 3) Financeiro PDF (boletos simplificados) - group by selected month (or all)
+    async function exportFinanceiroPDF(){
+      const doc = new jsPDF({unit:'pt',format:'a4'})
+      doc.setFontSize(16); doc.text('Relatório Financeiro — Boletos', 40, 40)
+      const filtro_mes = $('filtro_mes_input').value.trim()
+      let mens = state.mensalidades.slice().sort((a,b)=> (a.mes||'').localeCompare(b.mes||''))
+      if(filtro_mes) mens = mens.filter(m=>m.mes===filtro_mes)
+      let y = 70
+      for(const m of mens){
+        const aluno = state.alunos.find(a=>a.id===m.alunoId)
+        // Render a boleto-like box
+        doc.setDrawColor(220); doc.setLineWidth(0.5)
+        doc.roundedRect(40, y, 512, 70, 6, 6)
+        doc.setFontSize(11); doc.text(`ALUNO: ${aluno?aluno.nome:'(removido)'}`, 50, y+18)
+        doc.text(`TURMA: ${aluno?aluno.turma||'-':'-'}`, 50, y+34)
+        doc.text(`MÊS: ${m.mes}`, 220, y+18)
+        doc.text(`VALOR: ${fmtMoney(m.valor)}`, 220, y+34)
+        doc.text(`VENC.: ${m.vencimento? (String(m.vencimento).padStart(2,'0') + '/' + (m.mes||'—')) : '—'}`, 360, y+18)
+        const status = m.pago ? 'PAGO' : (isOverdue(m, m.vencimento)? 'ATRASADO' : 'PENDENTE')
+        doc.setFontSize(12); doc.setTextColor(status==='PAGO'?0:200, status==='PAGO'?150:0, status==='PAGO'?80:0)
+        doc.text(status, 430, y+40)
+        doc.setTextColor(0,0,0)
+        y += 86
+        if(y > 720){ doc.addPage(); y = 40 }
+      }
+      doc.save('boletos.pdf')
+    }
+    $('btn_imprimir_fin').addEventListener('click', exportFinanceiroPDF)
+
+    // 4) Acompanhamento PDF (ficha do aluno)
+    async function exportAcompPDF(){
+      const alunoId = $('sel_aluno_acomp').value
+      if(!alunoId){ alert('Selecione aluno para exportar sua ficha'); return }
+      const aluno = state.alunos.find(a=>a.id===alunoId)
+      const record = state.acomp.find(a=>a.alunoId===alunoId)
+      const doc = new jsPDF({unit:'pt',format:'a4'})
+      doc.setFontSize(16); doc.text('Ficha de Acompanhamento', 40, 40)
+      doc.setFontSize(12); doc.text(`Aluno: ${aluno?aluno.nome:'(removido)'}`, 40, 64)
+      doc.text(`Escola: ${aluno?aluno.escola||'-':'-'}`, 40, 82)
+      doc.text(`Turma: ${aluno?aluno.turma||'-':'-'}`, 40, 100)
+      doc.text(`Horário: ${aluno?aluno.horario||'-':'-'}`, 40, 118)
+      doc.setFontSize(12); doc.text('Dificuldades:', 40, 150)
+      doc.setFontSize(10); doc.text((record && record.dificuldades) ? record.dificuldades : '—', 40, 168)
+      doc.setFontSize(12); doc.text('Plano de ação:', 40, 196)
+      doc.setFontSize(10); doc.text((record && record.plano) ? record.plano : '—', 40, 214)
+      // Notas as table
+      const notas = (record && record.notas && record.notas.length) ? record.notas.map(n=>[n.mes||'—', String(n.valor)]) : []
+      if(notas.length){
+        doc.autoTable({ startY: 244, head:[['Mês','Nota']], body: notas, theme:'grid', styles:{fontSize:11}, headStyles:{fillColor:[30,64,175], textColor:255}, margin:{left:40,right:40} })
+      } else {
+        doc.setFontSize(10); doc.text('Notas: —', 40, 244)
+      }
+      doc.save(`ficha_${aluno?aluno.nome.replace(/\s+/g,'_'):'aluno'}.pdf`)
+    }
+    $('btn_imprimir_acomp').addEventListener('click', exportAcompPDF)
+
+    // 5) Desempenho PDFs (chart images)
+    async function exportBarrasPDF(){
+      // export chartBar to image
+      const canvas = document.getElementById('chart_barras')
+      const img = canvas.toDataURL('image/png', 1.0)
+      const doc = new jsPDF({unit:'pt',format:'a4'})
+      doc.setFontSize(16); doc.text('Notas médias (por aluno)', 40, 40)
+      doc.addImage(img, 'PNG', 40, 60, 520, 260)
+      doc.save('notas_medias.pdf')
+    }
+    $('btn_pdf_barras').addEventListener('click', exportBarrasPDF)
+
+    async function exportLinhaPDF(){
+      const canvas = document.getElementById('chart_linha')
+      const img = canvas.toDataURL('image/png', 1.0)
+      const alunoSel = $('sel_aluno_desem').value
+      const aluno = state.alunos.find(a=>a.id===alunoSel)
+      if(!alunoSel){ alert('Selecione um aluno'); return }
+      const doc = new jsPDF({unit:'pt',format:'a4'})
+      doc.setFontSize(16); doc.text(`Evolução: ${aluno?aluno.nome:'-'}`, 40, 40)
+      doc.addImage(img, 'PNG', 40, 60, 520, 260)
+      doc.save(`evolucao_${aluno?aluno.nome.replace(/\s+/g,'_'):'aluno'}.pdf`)
+    }
+    $('btn_pdf_linha').addEventListener('click', exportLinhaPDF)
+
+    // ---------- Utility: Export entire current view as PDF using html2canvas (optional) ----------
+    async function exportViewToPDF(elementSelector, filename='export.pdf'){
+      const el = document.querySelector(elementSelector)
+      if(!el){ alert('Elemento não encontrado'); return }
+      const canvas = await html2canvas(el, {scale:2, backgroundColor: null})
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({unit:'pt',format:'a4'})
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = pageWidth - 80
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      pdf.addImage(imgData, 'PNG', 40, 40, imgWidth, imgHeight)
+      pdf.save(filename)
+    }
+
+    // ---------- Button wiring for generic exports ----------
+    // For convenience, add a button to export dashboard's finance chart
+    // (not requested but useful)
+    // $('btn_export_dashboard')?.addEventListener('click', ()=> exportViewToPDF('#dashboard','dashboard.pdf'))
+
+    // ---------- UI interactions & small helpers ----------
+    // 'Verificar conflitos' quick action: lists conflicts of same aluno same day/time
+    $('btn_export_ag_viz').addEventListener('click', ()=>{
+      const conflicts = []
+      const seen = {}
+      state.agenda.forEach(it=>{
+        const key = `${it.alunoId}::${it.dia}::${it.hora}`
+        if(seen[key]) conflicts.push({alunoId: it.alunoId, dia: it.dia, hora: it.hora})
+        seen[key] = true
+      })
+      if(conflicts.length) alert('Foram encontrados conflitos (mesmo aluno duplicado no mesmo dia/horário). Verifique a agenda.')
+      else alert('Nenhum conflito encontrado.')
+    })
+
+    // ---------- Bind export buttons already assigned earlier ----------
+    // Buttons for specific modules already set above
+
+    // ---------- Final refresh to ensure selects, charts up to date ----------
+    refreshAll()
+
+    // Keep data consistent when window loads/resizes
+    window.addEventListener('resize', ()=>{ if(window.innerWidth>1100) sidebar.classList.remove('open') })
+  </script>
+</body>
+</html>
